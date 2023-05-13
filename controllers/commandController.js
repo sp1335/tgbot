@@ -1,15 +1,48 @@
 const TelegramBot = require('node-telegram-bot-api');
 const fs = require('fs');
-const { start, catalogue, product, edit } = require('../services/scenarios');
+const { start, catalogue, product, edit, editDetail } = require('../services/scenarios');
 
 let productList = []
 let selectedItem
+let askState = false
+async function goToProduct(userid, bot) {
+    console.log(selectedItem)
+    if (userid !== undefined && bot !== undefined) {
+        const productConfig = await product(selectedItem.id, userid)
+        const keyboard = productConfig.keyboard
+        let caption = `<b>${selectedItem.name}</b>\n\n${selectedItem.description}\n\n`
+        if (selectedItem.cena1 !== null) {
+            caption += `<i>${selectedItem.cena1}PLN - ${selectedItem.porcja1}</i>\n`;
+        }
+        if (selectedItem.cena2 !== null) {
+            caption += `<i>${selectedItem.cena2}PLN - ${selectedItem.porcja2}</i>\n`;
+        }
+        if (selectedItem.cena3 !== null) {
+            caption += `<i>${selectedItem.cena3}PLN - ${selectedItem.porcja3}</i>`;
+        }
+        bot.sendPhoto(
+            userid,
+            './img/16469064804190.png',
+            {
+                caption: caption,
+                parse_mode: 'HTML',
+                reply_markup: {
+                    keyboard: keyboard,
+                    resize_keyboard: true,
+                }
+            }
+        )
+    }
+}
 function initializeCommands(bot) {
     bot.onText(/.*/, async (msg, match) => {
         const userid = msg.from.id
         const clickedButton = match[0]
         const clickedProduct = productList.find(product => product.name === clickedButton);
-        console.log(userid, msg.from.first_name, 'typed: ', clickedButton) //log
+
+        //user action log
+        console.log(userid, msg.from.first_name, 'typed: ', clickedButton)
+
         if (clickedButton === 'Catalogue' || clickedButton === 'Go back to catalogue') {
             selectedItem = null
             const catalogueConfig = await catalogue()
@@ -34,6 +67,44 @@ function initializeCommands(bot) {
                     resize_keyboard: true,
                 },
             });
+        } else if (clickedButton === 'Edit name' || clickedButton === 'Edit description' || clickedButton === 'Edit options' || clickedButton === 'Edit photo') {
+            let editConf
+            console.log("Asked for value to edit, so ask state is: ", askState)
+            switch (clickedButton) {
+                case 'Edit name':
+                    editConf = 'name'
+                    askState = true
+                    break;
+                case 'Edit description':
+                    editConf = 'description'
+                    askState = true
+                    break;
+                case 'Edit options':
+                    editConf = 'options'
+                    askState = true
+                    break;
+                case 'Edit photo':
+                    console.log('Edit photo')
+                    break;
+                default:
+                    break;
+            }
+            bot.sendMessage(msg.from.id, `Enter the new ${editConf} for this product: `)
+            let newValue
+            bot.on('message', async (msg) => {
+                newValue = msg.text
+                if (newValue !== '') {
+                    console.log(`${msg.from.first_name} trying to edit productid: ${selectedItem.id}, option: ${editConf}, value: ${newValue}`)
+                    if (selectedItem !== null && selectedItem !== undefined) {
+                        const editService = await editDetail(selectedItem.id, userid, editConf, newValue)
+                        if (editService.status === 200) {
+                            askState = false
+                            goToProduct(msg.from.id, bot)
+                        }
+                    }
+                }
+            })
+
         } else if (clickedButton === 'Edit item' && selectedItem !== null && selectedItem !== '' && selectedItem !== undefined) {
             const editConfig = await edit(selectedItem.id, msg.from.id)
             console.log(selectedItem)
@@ -53,41 +124,18 @@ function initializeCommands(bot) {
                 });
             }
             if (selectedItem !== null && selectedItem !== '' && selectedItem !== undefined) {
-                const productConfig = await product(selectedItem.id, userid)
-                console.log(productConfig)
-                const keyboard = productConfig.keyboard
-                let caption = `<b>${selectedItem.name}</b>\n\n${selectedItem.description}\n\n`
-                if (selectedItem.cena1 !== null) {
-                    caption += `<i>${selectedItem.cena1}PLN - ${selectedItem.porcja1}</i>\n`;
-                }
-                if (selectedItem.cena2 !== null) {
-                    caption += `<i>${selectedItem.cena2}PLN - ${selectedItem.porcja2}</i>\n`;
-                }
-
-                if (selectedItem.cena3 !== null) {
-                    caption += `<i>${selectedItem.cena3}PLN - ${selectedItem.porcja3}</i>`;
-                }
-                bot.sendPhoto(
-                    msg.chat.id,
-                    './img/16469064804190.png',
-                    {
-                        caption: caption,
-                        parse_mode: 'HTML',
-                        reply_markup: {
-                            keyboard: keyboard,
-                            resize_keyboard: true,
-                        }
-                    }
-                )
+                goToProduct(msg.from.id, bot)
             } else {
                 bot.sendMessage(userid, `You've not selected any product yet...`, {
                     parse_mode: 'HTML'
                 });
             }
         } else {
-            bot.sendMessage(msg.from.id, '<i>Unknown command\nGo back to /start</i>', {
-                parse_mode: 'HTML'
-            });
+            if (askState === false) {
+                bot.sendMessage(msg.from.id, '<i>Unknown command\nGo back to /start</i>', {
+                    parse_mode: 'HTML'
+                });
+            }
         }
     })
 }

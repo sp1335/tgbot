@@ -52,7 +52,17 @@ async function product(id, uid) {
         status
     }
 }
-
+async function editDetail(id, uid, config, value) {
+    const status = await authMiddleware.identifyUser(uid)
+    if (status.data.role === 'staff') {
+        const editResponse = await productService.editProduct(id, config, value)
+        if (editResponse.status === 200) {
+            return { status: 200, message: 'Item updated successfully' }
+        }
+    } else {
+        return { status: 500, message: 'Unautorized action...' }
+    }
+}
 async function edit(id, uid) {
     const status = await authMiddleware.identifyUser(uid)
     console.log(status)
@@ -66,16 +76,14 @@ async function edit(id, uid) {
                 newCatalogue: productList
             }
         }
-        const keyboard = [['Edit name', 'Edit description'], ['Edit options', 'Edit photo(temporary not available'], ['Go back to product']]
+        const keyboard = [['Edit name', 'Edit description'], ['Edit options', 'Edit photo(temporary not available)'], ['Go back to product']]
         return {
             status: 200,
             message: 'What do you want to change?',
-            // newCatalogue: productList,
             keyboard
         }
-    }else{
-        return {status: 500, message: 'Product edit forbidden '}
+    } else {
+        return { status: 500, message: 'Product edit forbidden ' }
     }
-
 }
-module.exports = { catalogue, start, product, edit }
+module.exports = { catalogue, start, product, edit, editDetail }
