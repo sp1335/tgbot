@@ -5,7 +5,7 @@ async function identifyUser(user) {
     FROM users 
     WHERE telegram_id = $1`
     try {
-        const dbResponse = await pool.query(identifyQuery, [user.id])
+        const dbResponse = await pool.query(identifyQuery, [user])
         if (dbResponse.rowCount > 0) {
             const userData = dbResponse.rows[0]
             return { status: 200, data: userData }
