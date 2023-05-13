@@ -5,5 +5,8 @@ async function fetchProducts() {
     const productList = await pool.query(query)
     return productList.rows
 }
+async function editProduct(id){
+    console.log('Product ID to edit: ', id)
+}
 
-module.exports = { fetchProducts }
+module.exports = { fetchProducts, editProduct }
