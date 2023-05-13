@@ -35,7 +35,7 @@ function initializeCommands(bot) {
                 },
             });
         } else if (clickedButton === 'Edit item' && selectedItem !== null && selectedItem !== '' && selectedItem !== undefined) {
-            const editConfig = await edit(selectedItem.id)
+            const editConfig = await edit(selectedItem.id, msg.from.id)
             console.log(selectedItem)
             bot.sendMessage(userid, editConfig.message, {
                 parse_mode: 'HTML',

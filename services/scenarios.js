@@ -53,23 +53,29 @@ async function product(id, uid) {
     }
 }
 
-async function edit(id) {
-    try {
-        productService.editProduct(id)
-    } catch (error) {
-        return {
-            status: 500,
-            message: 'Product edit failed: ' + error,
-            newCatalogue: productList
+async function edit(id, uid) {
+    const status = await authMiddleware.identifyUser(uid)
+    console.log(status)
+    if (status.data.role === 'staff') {
+        try {
+            productService.editProduct(id)
+        } catch (error) {
+            return {
+                status: 500,
+                message: 'Product edit failed: ' + error,
+                newCatalogue: productList
+            }
         }
+        const keyboard = [['Edit name', 'Edit description'], ['Edit options', 'Edit photo(temporary not available'], ['Go back to product']]
+        return {
+            status: 200,
+            message: 'What do you want to change?',
+            // newCatalogue: productList,
+            keyboard
+        }
+    }else{
+        return {status: 500, message: 'Product edit forbidden '}
     }
-    const keyboard = [['Edit name', 'Edit description'],['Edit options','Edit photo(temporary not available'],['Go back to product']]
-    // const productList = await productService.fetchProducts()
-    return {
-        status: 200,
-        message: 'What do you want to change?',
-        // newCatalogue: productList,
-        keyboard
-    }
+
 }
 module.exports = { catalogue, start, product, edit }
