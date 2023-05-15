@@ -1,8 +1,9 @@
 const TelegramBot = require('node-telegram-bot-api');
 const fs = require('fs');
-const { start, catalogue, product, edit, editDetail } = require('../services/scenarios');
+const { start, catalogue, product, edit, editDetail, ordersForStaff, ordersKeyboard } = require('../services/scenarios');
 
 let productList = []
+let orderList = []
 let selectedItem
 let askState = false
 async function goToProduct(userid, bot) {
@@ -41,7 +42,7 @@ function initializeCommands(bot) {
         const userid = msg.from.id
         const clickedButton = match[0]
         const clickedProduct = productList.find(product => product.name === clickedButton);
-
+        const clickedOrder = orderList.find(order => order.id === clickedButton)
         //user action log
         console.log(userid, msg.from.first_name, 'typed: ', clickedButton)
 
@@ -132,6 +133,54 @@ function initializeCommands(bot) {
                     parse_mode: 'HTML'
                 });
             }
+        } else if (clickedButton === 'Orders' || clickedButton === 'Go back to orders') {
+            const orders = await ordersForStaff(msg.from.id)
+            if (orders.status === 400) {
+                bot.sendMessage(msg.from.id, orders.message)
+            } else if (orders.status === 200) {
+                const { served, unserved } = orders
+                orderList.push(served, unserved)
+                bot.sendMessage(msg.from.id, `${served.length} served and ${unserved.length} unserved orders were found`, {
+                    parse_mode: 'HTML',
+                    reply_markup: {
+                        keyboard: orders.keyboard,
+                        resize_keyboard: true,
+                    },
+                })
+            } else {
+                bot.sendMessage(msg.from.id, 'Unknown error')
+            }
+        } else if (clickedButton === 'Unserved orders' || clickedButton === 'Served orders') {
+            const unserved = orderList[1]
+            const served = orderList[0]
+            if (orderList !== undefined) {
+                let keyboard
+                let listName
+                if (clickedButton === 'Unserved orders') {
+                    listName = 'Unserved'
+                    keyboard = ordersKeyboard(unserved)
+                } else if (clickedButton === 'Served orders') {
+                    listName = 'Served'
+                    keyboard = ordersKeyboard(served)
+                }
+                console.log(keyboard)
+                let keyboardFormatted = []
+                keyboard.map(key => {
+                    const date = new Date(key[4])
+                    const deadline = `${date.getHours()}:${date.getMinutes()} ${date.getDate()}/${String(date.getMonth() + 1).padStart(2, '0')}`;
+                    keyboardFormatted.push([`Order #${key[0]}, from @${key[1]}. Deadline: ${deadline}`])
+                })
+                keyboardFormatted.push(['Go back to orders'])
+                bot.sendMessage(msg.from.id, `${keyboard.length} ${listName} orders found. Here they are...`, {
+                    parse_mode: 'HTML',
+                    reply_markup: {
+                        keyboard: keyboardFormatted,
+                        resize_keyboard: true,
+                    },
+                })
+            }
+        } else if (clickedOrder) {
+            console.log(clickedOrder)
         } else {
             if (askState === false) {
                 bot.sendMessage(msg.from.id, '<i>Unknown command\nGo back to /start</i>', {

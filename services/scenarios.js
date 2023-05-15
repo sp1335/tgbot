@@ -1,5 +1,6 @@
 const authMiddleware = require('../middlewares/authMiddleware');
 const productService = require('../services/productService');
+const orderService = require('../services/orderService');
 
 async function start(msg) {
     const { id } = msg.from
@@ -86,4 +87,30 @@ async function edit(id, uid) {
         return { status: 500, message: 'Product edit forbidden ' }
     }
 }
-module.exports = { catalogue, start, product, edit, editDetail }
+async function ordersForStaff(uid) {
+    const status = await authMiddleware.identifyUser(uid)
+    if (status.data.role === 'staff') {
+        const orders = await orderService.ordersStaff()
+        console.log(orders)
+        if (orders.orders.length < 1) {
+            return { status: 400, message: 'No orders found both served and unserved...' }
+        } else {
+            const servedCount = orders.orders.filter(order => order.is_complited === true)
+            const unservedCount = orders.orders.filter(order => order.is_complited === false)
+            return { status: 200, served: servedCount, unserved: unservedCount, keyboard: [['Unserved orders', 'Served orders'], ['Go back to start']] }
+        }
+    } else {
+        return { status: 500, message: 'Unautorized action...' }
+    }
+}
+function ordersKeyboard(array) {
+    const keyboard = []
+    if (array !== undefined) {
+        array.forEach(order => {
+            keyboard.push([order.id, order.username, order.first_name, order.phone_number, order.deadline])
+        })
+    }
+
+    return keyboard
+}
+module.exports = { catalogue, start, product, edit, editDetail, ordersForStaff, ordersKeyboard }
