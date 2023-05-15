@@ -6,7 +6,9 @@ let productList = []
 let selectedItem
 let askState = false
 async function goToProduct(userid, bot) {
-    console.log(selectedItem)
+    const catalogueConfig = await catalogue()
+    productList = catalogueConfig.catalogue
+    selectedItem = productList.find(product => product.id === selectedItem.id)
     if (userid !== undefined && bot !== undefined) {
         const productConfig = await product(selectedItem.id, userid)
         const keyboard = productConfig.keyboard
@@ -87,6 +89,7 @@ function initializeCommands(bot) {
                     console.log('Edit photo')
                     break;
                 default:
+                    askState = false
                     break;
             }
             bot.sendMessage(msg.from.id, `Enter the new ${editConf} for this product: `)
@@ -104,7 +107,6 @@ function initializeCommands(bot) {
                     }
                 }
             })
-
         } else if (clickedButton === 'Edit item' && selectedItem !== null && selectedItem !== '' && selectedItem !== undefined) {
             const editConfig = await edit(selectedItem.id, msg.from.id)
             console.log(selectedItem)
