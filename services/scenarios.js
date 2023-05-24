@@ -1,10 +1,15 @@
 const authMiddleware = require('../middlewares/authMiddleware');
 const productService = require('../services/productService');
 const orderService = require('../services/orderService');
+const UserService = require('../services/userService');
 
-async function start(msg) {
-    const { id } = msg.from
-    const status = await authMiddleware.identifyUser(id)
+async function requestStatus(uid) {
+    return await authMiddleware.identifyUser(uid)
+}
+
+async function start(from) {
+    const status = await requestStatus(from.id)
+    console.log(status)
     if (status.status === 201) {
         return { message: `Welcome, ${status.data.first_name}, for the first time!` }
     } else if (status.status === 200) {
@@ -38,9 +43,8 @@ async function catalogue() {
         catalogue: productList
     }
 }
-
-async function product(id, uid) {
-    const status = await authMiddleware.identifyUser(uid)
+async function product(from) {
+    const status = await requestStatus(from)
     let keyboard = []
     if (status.data.role === 'staff') {
         keyboard = [['Edit item', 'Delete item'], ['Go back to catalogue']]
@@ -53,8 +57,8 @@ async function product(id, uid) {
         status
     }
 }
-async function editDetail(id, uid, config, value) {
-    const status = await authMiddleware.identifyUser(uid)
+async function editDetail(id, from, config, value) {
+    const status = await requestStatus(from)
     if (status.data.role === 'staff') {
         const editResponse = await productService.editProduct(id, config, value)
         if (editResponse.status === 200) {
@@ -64,9 +68,8 @@ async function editDetail(id, uid, config, value) {
         return { status: 500, message: 'Unautorized action...' }
     }
 }
-async function edit(id, uid) {
-    const status = await authMiddleware.identifyUser(uid)
-    console.log(status)
+async function edit(id, from) {
+    const status = await requestStatus(from)
     if (status.data.role === 'staff') {
         try {
             productService.editProduct(id)
@@ -87,11 +90,28 @@ async function edit(id, uid) {
         return { status: 500, message: 'Product edit forbidden ' }
     }
 }
-async function ordersForStaff(uid) {
-    const status = await authMiddleware.identifyUser(uid)
+async function ordersForCustomer(from) {
+    const uid = await UserService.getUid(from.id)
+    const orders = await orderService.ordersCustomer(uid.id)
+    console.log(from)
+    if (orders.status === 200) {
+        if (orders.orders.length === 0) {
+            return {
+                status: 200,
+                message: 'You have no orders yet...'
+            }
+        } else {
+            return {
+                status: 200,
+                orders: orders
+            }
+        }
+    }
+}
+async function ordersForStaff(from) {
+    const status = await requestStatus(from.id)
     if (status.data.role === 'staff') {
         const orders = await orderService.ordersStaff()
-        console.log(orders)
         if (orders.orders.length < 1) {
             return { status: 400, message: 'No orders found both served and unserved...' }
         } else {
@@ -103,14 +123,26 @@ async function ordersForStaff(uid) {
         return { status: 500, message: 'Unautorized action...' }
     }
 }
-function ordersKeyboard(array) {
+
+function ordersKeyboard(array, type) {
     const keyboard = []
+    console.log(array, type)
     if (array !== undefined) {
-        array.forEach(order => {
-            keyboard.push([order.id, order.username, order.first_name, order.phone_number, order.deadline])
-        })
+        if (type === 'staff') {
+            array.forEach(order => {
+                keyboard.push([order.id, order.username, order.first_name, order.phone_number, order.deadline])
+            })
+        } else if (type === 'customer') {
+            array.forEach(order => {
+                keyboard.push([order.id, order.total_price, order.deadline])
+            })
+        } else {
+            return { status: 500, message: 'Unauthorized action' }
+        }
+        return { status: 200, keyboard}
+    } else {
+        return { status: 500, message: 'Invalid array' }
     }
 
-    return keyboard
 }
-module.exports = { catalogue, start, product, edit, editDetail, ordersForStaff, ordersKeyboard }
+module.exports = { catalogue, start, product, edit, editDetail, ordersForStaff, ordersKeyboard, ordersForCustomer }

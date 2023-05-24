@@ -1,17 +1,16 @@
-const TelegramBot = require('node-telegram-bot-api');
-const fs = require('fs');
-const { start, catalogue, product, edit, editDetail, ordersForStaff, ordersKeyboard } = require('../services/scenarios');
+const { start, catalogue, product, edit, editDetail, ordersForStaff, ordersKeyboard, ordersForCustomer } = require('../services/scenarios');
 
 let productList = []
 let orderList = []
 let selectedItem
 let askState = false
-async function goToProduct(userid, bot) {
+
+async function goToProduct(from, bot) {
     const catalogueConfig = await catalogue()
     productList = catalogueConfig.catalogue
     selectedItem = productList.find(product => product.id === selectedItem.id)
-    if (userid !== undefined && bot !== undefined) {
-        const productConfig = await product(selectedItem.id, userid)
+    if (from !== undefined && bot !== undefined) {
+        const productConfig = await product(from)
         const keyboard = productConfig.keyboard
         let caption = `<b>${selectedItem.name}</b>\n\n${selectedItem.description}\n\n`
         if (selectedItem.cena1 !== null) {
@@ -24,7 +23,7 @@ async function goToProduct(userid, bot) {
             caption += `<i>${selectedItem.cena3}PLN - ${selectedItem.porcja3}</i>`;
         }
         bot.sendPhoto(
-            userid,
+            from.id,
             './img/16469064804190.png',
             {
                 caption: caption,
@@ -45,13 +44,11 @@ function initializeCommands(bot) {
         const clickedOrder = orderList.find(order => order.id === clickedButton)
         //user action log
         console.log(userid, msg.from.first_name, 'typed: ', clickedButton)
-
         if (clickedButton === 'Catalogue' || clickedButton === 'Go back to catalogue') {
             selectedItem = null
             const catalogueConfig = await catalogue()
             const keyboard = catalogueConfig.catalogue.map(product => [{ text: product.name }])
             productList = catalogueConfig.catalogue
-            keyboard.push(['⬅️', '🔎', '➡️'])
             const replyMarkup = {
                 keyboard,
                 resize_keyboard: true
@@ -62,7 +59,8 @@ function initializeCommands(bot) {
         }
         else if (clickedButton === 'Go back to start' || clickedButton === '\/start') {
             selectedItem = null
-            const startConfig = await start(msg)
+            const startConfig = await start(msg.from)
+            console.log('Controller', startConfig)
             bot.sendMessage(userid, startConfig.message, {
                 parse_mode: 'HTML',
                 reply_markup: {
@@ -103,15 +101,15 @@ function initializeCommands(bot) {
                         const editService = await editDetail(selectedItem.id, userid, editConf, newValue)
                         if (editService.status === 200) {
                             askState = false
-                            goToProduct(msg.from.id, bot)
+                            goToProduct(msg.from, bot)
                         }
                     }
                 }
             })
         } else if (clickedButton === 'Edit item' && selectedItem !== null && selectedItem !== '' && selectedItem !== undefined) {
-            const editConfig = await edit(selectedItem.id, msg.from.id)
+            const editConfig = await edit(selectedItem.id, msg.from)
             console.log(selectedItem)
-            bot.sendMessage(userid, editConfig.message, {
+            bot.sendMessage(msg.from.id, editConfig.message, {
                 parse_mode: 'HTML',
                 reply_markup: {
                     keyboard: editConfig.keyboard,
@@ -122,19 +120,23 @@ function initializeCommands(bot) {
             if (clickedProduct !== undefined) {
                 selectedItem = clickedProduct
             } else if (selectedItem === undefined) {
-                bot.sendMessage(userid, `You've not selected any product yet...`, {
+                bot.sendMessage(msg.from.id, `You've not selected any product yet...`, {
                     parse_mode: 'HTML'
                 });
             }
             if (selectedItem !== null && selectedItem !== '' && selectedItem !== undefined) {
-                goToProduct(msg.from.id, bot)
+                goToProduct(msg.from, bot)
             } else {
-                bot.sendMessage(userid, `You've not selected any product yet...`, {
+                bot.sendMessage(msg.from.id, `You've not selected any product yet...`, {
                     parse_mode: 'HTML'
                 });
             }
+        } else if (clickedButton === 'My orders') {
+            const orders = await ordersForCustomer(msg.from);
+            const keyboard = ordersKeyboard(orders.orders.orders, 'customer')
+            console.log(keyboard)
         } else if (clickedButton === 'Orders' || clickedButton === 'Go back to orders') {
-            const orders = await ordersForStaff(msg.from.id)
+            const orders = await ordersForStaff(msg.from)
             if (orders.status === 400) {
                 bot.sendMessage(msg.from.id, orders.message)
             } else if (orders.status === 200) {
@@ -158,14 +160,14 @@ function initializeCommands(bot) {
                 let listName
                 if (clickedButton === 'Unserved orders') {
                     listName = 'Unserved'
-                    keyboard = ordersKeyboard(unserved)
+                    keyboard = ordersKeyboard(unserved, 'staff')
                 } else if (clickedButton === 'Served orders') {
                     listName = 'Served'
-                    keyboard = ordersKeyboard(served)
+                    keyboard = ordersKeyboard(served, 'staff')
                 }
                 console.log(keyboard)
                 let keyboardFormatted = []
-                keyboard.map(key => {
+                keyboard.keyboard.map(key => {
                     const date = new Date(key[4])
                     const deadline = `${date.getHours()}:${date.getMinutes()} ${date.getDate()}/${String(date.getMonth() + 1).padStart(2, '0')}`;
                     keyboardFormatted.push([`Order #${key[0]}, from @${key[1]}. Deadline: ${deadline}`])
