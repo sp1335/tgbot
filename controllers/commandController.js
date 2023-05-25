@@ -56,8 +56,7 @@ function initializeCommands(bot) {
             bot.sendMessage(msg.chat.id, catalogueConfig.message, {
                 reply_markup: replyMarkup
             })
-        }
-        else if (clickedButton === 'Go back to start' || clickedButton === '\/start') {
+        } else if (clickedButton === 'Go back to start' || clickedButton === '\/start') {
             selectedItem = null
             const startConfig = await start(msg.from)
             console.log('Controller', startConfig)
@@ -131,6 +130,28 @@ function initializeCommands(bot) {
                     parse_mode: 'HTML'
                 });
             }
+        } else if (clickedButton === 'Order this item') {
+            console.log(selectedItem)
+            const portions = Object.entries(selectedItem)
+                .filter(([key, value]) => key.startsWith('porcja'))
+                .filter(([key, value]) => value !== null)
+                .map(([key, value]) => value)
+                console.log(portions)
+            const keyboard = {
+                inline_keyboard: [
+                    portions.map((portion)=>[
+                        {text: portion, callback_data: portion}
+                    ])
+                ]
+            }
+            // [portions, ['Go back to product']]
+            bot.sendMessage(msg.from.id, `Selected preffered portion from the set below`, {
+                parse_mode: 'HTML',
+                reply_markup: {
+                    keyboard: keyboard,
+                    resize_keyboard: true,
+                }
+            })
         } else if (clickedButton === 'My orders') {
             const orders = await ordersForCustomer(msg.from);
             const keyboard = ordersKeyboard(orders.orders.orders, 'customer')

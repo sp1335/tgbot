@@ -44,7 +44,8 @@ async function catalogue() {
     }
 }
 async function product(from) {
-    const status = await requestStatus(from)
+    const status = await requestStatus(from.id)
+    console.log(status)
     let keyboard = []
     if (status.data.role === 'staff') {
         keyboard = [['Edit item', 'Delete item'], ['Go back to catalogue']]
