@@ -131,24 +131,15 @@ function initializeCommands(bot) {
                 });
             }
         } else if (clickedButton === 'Order this item') {
-            console.log(selectedItem)
             const portions = Object.entries(selectedItem)
                 .filter(([key, value]) => key.startsWith('porcja'))
                 .filter(([key, value]) => value !== null)
                 .map(([key, value]) => value)
-                console.log(portions)
-            const keyboard = {
-                inline_keyboard: [
-                    portions.map((portion)=>[
-                        {text: portion, callback_data: portion}
-                    ])
-                ]
-            }
-            // [portions, ['Go back to product']]
+            console.log(portions)
             bot.sendMessage(msg.from.id, `Selected preffered portion from the set below`, {
                 parse_mode: 'HTML',
                 reply_markup: {
-                    keyboard: keyboard,
+                    keyboard: [portions],
                     resize_keyboard: true,
                 }
             })
