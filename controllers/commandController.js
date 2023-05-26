@@ -1,4 +1,4 @@
-const { start, catalogue, product, edit, editDetail, ordersForStaff, ordersKeyboard, ordersForCustomer } = require('../services/scenarios');
+const { start, catalogue, edit, editDetail, ordersForStaff, ordersKeyboard, ordersForCustomer } = require('../services/scenarios');
 
 let productList = []
 let orderList = []
@@ -9,9 +9,15 @@ async function goToProduct(from, bot) {
     const catalogueConfig = await catalogue()
     productList = catalogueConfig.catalogue
     selectedItem = productList.find(product => product.id === selectedItem.id)
+    const portions = Object.entries(selectedItem)
+        .filter(([key, value]) => key.startsWith('porcja'))
+        .filter(([key, value]) => value !== null)
+        .map(([key, value]) => value)
+    const buttons = portions.map((portion) => ({
+        text: portion,
+        callback_data: `portion_${portion}`
+    }))
     if (from !== undefined && bot !== undefined) {
-        const productConfig = await product(from)
-        const keyboard = productConfig.keyboard
         let caption = `<b>${selectedItem.name}</b>\n\n${selectedItem.description}\n\n`
         if (selectedItem.cena1 !== null) {
             caption += `<i>${selectedItem.cena1}PLN - ${selectedItem.porcja1}</i>\n`;
@@ -29,8 +35,8 @@ async function goToProduct(from, bot) {
                 caption: caption,
                 parse_mode: 'HTML',
                 reply_markup: {
-                    keyboard: keyboard,
-                    resize_keyboard: true,
+                    inline_keyboard: [buttons],
+                    resize_keyboard: true
                 }
             }
         )
@@ -67,54 +73,6 @@ function initializeCommands(bot) {
                     resize_keyboard: true,
                 },
             });
-        } else if (clickedButton === 'Edit name' || clickedButton === 'Edit description' || clickedButton === 'Edit options' || clickedButton === 'Edit photo') {
-            let editConf
-            console.log("Asked for value to edit, so ask state is: ", askState)
-            switch (clickedButton) {
-                case 'Edit name':
-                    editConf = 'name'
-                    askState = true
-                    break;
-                case 'Edit description':
-                    editConf = 'description'
-                    askState = true
-                    break;
-                case 'Edit options':
-                    editConf = 'options'
-                    askState = true
-                    break;
-                case 'Edit photo':
-                    console.log('Edit photo')
-                    break;
-                default:
-                    askState = false
-                    break;
-            }
-            bot.sendMessage(msg.from.id, `Enter the new ${editConf} for this product: `)
-            let newValue
-            bot.on('message', async (msg) => {
-                newValue = msg.text
-                if (newValue !== '') {
-                    console.log(`${msg.from.first_name} trying to edit productid: ${selectedItem.id}, option: ${editConf}, value: ${newValue}`)
-                    if (selectedItem !== null && selectedItem !== undefined) {
-                        const editService = await editDetail(selectedItem.id, userid, editConf, newValue)
-                        if (editService.status === 200) {
-                            askState = false
-                            goToProduct(msg.from, bot)
-                        }
-                    }
-                }
-            })
-        } else if (clickedButton === 'Edit item' && selectedItem !== null && selectedItem !== '' && selectedItem !== undefined) {
-            const editConfig = await edit(selectedItem.id, msg.from)
-            console.log(selectedItem)
-            bot.sendMessage(msg.from.id, editConfig.message, {
-                parse_mode: 'HTML',
-                reply_markup: {
-                    keyboard: editConfig.keyboard,
-                    resize_keyboard: true,
-                },
-            });
         } else if (clickedProduct || clickedButton === 'Go back to product') {
             if (clickedProduct !== undefined) {
                 selectedItem = clickedProduct
@@ -130,20 +88,7 @@ function initializeCommands(bot) {
                     parse_mode: 'HTML'
                 });
             }
-        } else if (clickedButton === 'Order this item') {
-            const portions = Object.entries(selectedItem)
-                .filter(([key, value]) => key.startsWith('porcja'))
-                .filter(([key, value]) => value !== null)
-                .map(([key, value]) => value)
-            console.log(portions)
-            bot.sendMessage(msg.from.id, `Selected preffered portion from the set below`, {
-                parse_mode: 'HTML',
-                reply_markup: {
-                    keyboard: [portions],
-                    resize_keyboard: true,
-                }
-            })
-        } else if (clickedButton === 'My orders') {
+        }else if (clickedButton === 'My orders') {
             const orders = await ordersForCustomer(msg.from);
             const keyboard = ordersKeyboard(orders.orders.orders, 'customer')
             console.log(keyboard)

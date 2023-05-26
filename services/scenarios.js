@@ -43,21 +43,17 @@ async function catalogue() {
         catalogue: productList
     }
 }
-async function product(from) {
-    const status = await requestStatus(from.id)
-    console.log(status)
-    let keyboard = []
-    if (status.data.role === 'staff') {
-        keyboard = [['Edit item', 'Delete item'], ['Go back to catalogue']]
-    } else {
-        keyboard = [['Order this item'], ['Go back to catalogue']]
-    }
-    return {
-        message: 'Product loaded successfully...',
-        keyboard,
-        status
-    }
-}
+// async function product(from) {
+//     const status = await requestStatus(from.id)
+//     console.log(status)
+//     let keyboard = []
+//     if (status.data.role === 'staff') {
+//         keyboard = [['Edit item', 'Delete item'], ['Go back to catalogue']]
+//     } else {
+//         keyboard = [['Order this item'], ['Go back to catalogue']]
+//     }
+//     return keyboard
+// }
 async function editDetail(id, from, config, value) {
     const status = await requestStatus(from)
     if (status.data.role === 'staff') {
@@ -140,10 +136,19 @@ function ordersKeyboard(array, type) {
         } else {
             return { status: 500, message: 'Unauthorized action' }
         }
-        return { status: 200, keyboard}
+        return { status: 200, keyboard }
     } else {
         return { status: 500, message: 'Invalid array' }
     }
 
 }
-module.exports = { catalogue, start, product, edit, editDetail, ordersForStaff, ordersKeyboard, ordersForCustomer }
+module.exports = {
+    catalogue,
+    start, 
+    // product, 
+    edit, 
+    editDetail, 
+    ordersForStaff, 
+    ordersKeyboard, 
+    ordersForCustomer
+}
