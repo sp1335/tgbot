@@ -94,7 +94,7 @@ async function ordersForCustomer(from) {
     if (orders.status === 200) {
         if (orders.orders.length === 0) {
             return {
-                status: 200,
+                status: 204,
                 message: 'You have no orders yet...'
             }
         } else {

@@ -88,10 +88,14 @@ function initializeCommands(bot) {
                     parse_mode: 'HTML'
                 });
             }
-        }else if (clickedButton === 'My orders') {
+        } else if (clickedButton === 'My orders') {
             const orders = await ordersForCustomer(msg.from);
-            const keyboard = ordersKeyboard(orders.orders.orders, 'customer')
-            console.log(keyboard)
+            console.log(orders)
+            if (orders.status === 204) {
+                bot.sendMessage(msg.from.id, orders.message)
+            } else {
+                const keyboard = ordersKeyboard(orders.orders.orders, 'customer')
+            }
         } else if (clickedButton === 'Orders' || clickedButton === 'Go back to orders') {
             const orders = await ordersForStaff(msg.from)
             if (orders.status === 400) {
