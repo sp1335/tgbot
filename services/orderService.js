@@ -5,11 +5,12 @@ async function makeOrder(tgid, config, pid) {
     const customerActiveOrder = `SELECT * FROM orders WHERE user_id = $1 AND is_completed = false`
     const response = await pool.query(customerActiveOrder, [uid])
     if (response.rows.length > 0) {
+        //user has opened unpayed order
         const actualOrder = response.rows[0]
         const orderId = actualOrder.id
         console.log(`We are about to add ${config} of PID${pid} to OID ${orderId}`)
     } else {
-        console.log('USER HAS NO UNCOMPLITE ORDER')
+        //user has no opened unpayed orders
     }
 }
 async function ordersCustomer(uid) {
