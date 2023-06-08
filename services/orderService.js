@@ -1,12 +1,15 @@
 const pool = require('../dbPool');
-async function makeOrder(uid, config) {
-    console.log(uid, config)
+const { getUid } = require('./userService')
+async function makeOrder(tgid, config, pid) {
+    const uid = await getUid(tgid)
     const customerActiveOrder = `SELECT * FROM orders WHERE user_id = $1 AND is_completed = false`
-    const isCustomerActiveOrder = await pool.query(customerActiveOrder, [uid])
-    if (isCustomerActiveOrder.rows.length > 0) {
-
-    }else{
-        const query = `INSERT INTO orders(user_id, date, total_price, delivery_type, delivery_address)`
+    const response = await pool.query(customerActiveOrder, [uid])
+    if (response.rows.length > 0) {
+        const actualOrder = response.rows[0]
+        const orderId = actualOrder.id
+        console.log(`We are about to add ${config} of PID${pid} to OID ${orderId}`)
+    } else {
+        console.log('USER HAS NO UNCOMPLITE ORDER')
     }
 }
 async function ordersCustomer(uid) {

@@ -15,7 +15,7 @@ async function goToProduct(from, bot) {
         .map(([key, value]) => value)
     const buttons = portions.map((portion) => ({
         text: portion,
-        callback_data: `portion_${portion}`
+        callback_data: `portion_${portion}, id_${selectedItem.id}`
     }))
     if (from !== undefined && bot !== undefined) {
         let caption = `<b>${selectedItem.name}</b>\n\n${selectedItem.description}\n\n`
