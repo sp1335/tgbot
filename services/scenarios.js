@@ -2,6 +2,7 @@ const authMiddleware = require('../middlewares/authMiddleware');
 const productService = require('../services/productService');
 const orderService = require('../services/orderService');
 const UserService = require('../services/userService');
+const { toUnicode } = require('punycode');
 
 async function requestStatus(uid) {
     return await authMiddleware.identifyUser(uid)
@@ -19,6 +20,7 @@ async function start(from) {
                     ['Catalogue'],
                     ['My orders'],
                     ['Send feedback']
+                    //TODO if user has unpayed order show button about it
                 ],
                 message: `Welcome again, ${status.data.first_name}!`
             }

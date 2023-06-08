@@ -9,6 +9,9 @@ async function makeOrder(tgid, config, pid) {
         const actualOrder = response.rows[0]
         const orderId = actualOrder.id
         console.log(`We are about to add ${config} of PID${pid} to OID ${orderId}`)
+        const query = `INSERT INTO order_items (order_id, product_id, quantity, price_per_unit) VALUES($1, $2, $3, $4)`
+        const addDoOrderResponse = await pool.query(query, [orderId, pid, 1, 228.00])
+        console.log(addDoOrderResponse)
     } else {
         //user has no opened unpayed orders
     }
