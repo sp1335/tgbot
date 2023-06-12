@@ -1,3 +1,4 @@
+const { stringify } = require('querystring');
 const { start, catalogue, edit, editDetail, ordersForStaff, ordersKeyboard, ordersForCustomer } = require('../services/scenarios');
 
 let productList = []
@@ -15,7 +16,12 @@ async function goToProduct(from, bot) {
         .map(([key, value]) => value)
     const buttons = portions.map((portion) => ({
         text: portion,
-        callback_data: `portion_${portion}, id_${selectedItem.id}`
+        callback_data: JSON.stringify({
+            method: 'order',
+            portion: portion,
+            pid: selectedItem.id,
+        })
+        // callback_data: `portion_${portion}, pid_${selectedItem.id}`
     }))
     if (from !== undefined && bot !== undefined) {
         let caption = `<b>${selectedItem.name}</b>\n\n${selectedItem.description}\n\n`

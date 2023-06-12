@@ -2,17 +2,18 @@ const { makeOrder } = require('../services/orderService')
 function initializeCallback(bot) {
     bot.on('callback_query', async (msg) => {
         const uid = msg.from.id
-        const query = msg.data
-        const q_method = query.split('_')[0]
-        if (q_method === 'portion') {
-            const q_value = (query.split(',')[0]).split('_')[1]
-            const pid = (query.split(',')[1]).split('_')[1]
-            const response = await makeOrder(uid, q_value, pid)
-            if (response.status === 200) {
-                bot.sendMessage(uid, response.message, { parse_mode: 'HTML' })
-            } else {
-                bot.sendMessage(uid, response.message, { parse_mode: 'HTML' })
-            }
+        const query = JSON.parse(msg.data)
+        const method = query.method
+        if (method === 'order') {
+            const pid = query.pid
+            const portion = query.portion
+            const response = await makeOrder(pid, uid, portion)
+            console.log('makeOrder response: ', response)
+            // if (response.status === 200) {
+            //     bot.sendMessage(uid, response.message, { parse_mode: 'HTML' })
+            // } else {
+            //     bot.sendMessage(uid, response.message, { parse_mode: 'HTML' })
+            // }
         } else {
             bot.sendMessage(uid, `<i>Unknown command\nGo back to /start</i>`, { parse_mode: 'HTML' })
         }
