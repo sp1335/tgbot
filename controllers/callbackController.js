@@ -19,11 +19,9 @@ function initializeCallback(bot) {
             } catch (error) {
                 console.log(error)
             }
-
         } else {
             bot.sendMessage(uid, `<i>Unknown command\nGo back to /start</i>`, { parse_mode: 'HTML' })
         }
-        // bot.sendMessage(uid, `You just ordered ${q_value} of ${msg.message.caption.split('\n')[0]}`, { parse_mode: 'HTML' })
     })
 }
 

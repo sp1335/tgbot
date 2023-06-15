@@ -80,6 +80,7 @@ function initializeCommands(bot) {
                 const keyboard = ordersKeyboard(orders.orders.orders, 'customer')
             }
         } else if (clickedButton === 'Finish your order') {
+            //TODO
             console.log('Finish order')
         } else if (clickedButton === 'Orders' || clickedButton === 'Go back to orders') {
             const orders = await ordersForStaff(msg.from)
