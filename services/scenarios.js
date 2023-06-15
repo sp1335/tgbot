@@ -7,6 +7,16 @@ const { toUnicode } = require('punycode');
 async function requestStatus(uid) {
     return await authMiddleware.identifyUser(uid)
 }
+async function checkActiveOrder(uid) {
+    const activeOrderRes = await orderService.checkActiveOrder(uid);
+    if (activeOrderRes) {
+        return { status: 200, order: activeOrderRes.order }
+    } else {
+        return { status: 204 }
+    }
+
+}
+
 async function goToProduct(from, selectedItem) {
     const catalogueConfig = await catalogue()
     productList = catalogueConfig.catalogue
@@ -38,18 +48,22 @@ async function goToProduct(from, selectedItem) {
 }
 async function start(from) {
     const status = await requestStatus(from.id)
-    console.log(status)
     if (status.status === 201) {
         return { message: `Welcome, ${status.data.first_name}, for the first time!` }
     } else if (status.status === 200) {
         if (status.data.role === 'customer') {
+            const activeOrderRes = await checkActiveOrder(status.data.id)
+            let keyboard = [
+                ['Catalogue'],
+                ['My orders'],
+                ['Send feedback']
+            ]
+            if (activeOrderRes.status === 200) {
+                keyboard.unshift([`Finish your order `])
+            }
+            console.log(keyboard)
             return {
-                keyboard: [
-                    ['Catalogue'],
-                    ['My orders'],
-                    ['Send feedback']
-                    //TODO if user has unpayed order show button about it
-                ],
+                keyboard: keyboard,
                 message: `Welcome again, ${status.data.first_name}!`
             }
         } else if (status.data.role === 'staff') {

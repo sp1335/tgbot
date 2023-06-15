@@ -79,6 +79,8 @@ function initializeCommands(bot) {
             } else {
                 const keyboard = ordersKeyboard(orders.orders.orders, 'customer')
             }
+        } else if (clickedButton === 'Finish your order') {
+            console.log('Finish order')
         } else if (clickedButton === 'Orders' || clickedButton === 'Go back to orders') {
             const orders = await ordersForStaff(msg.from)
             if (orders.status === 400) {
