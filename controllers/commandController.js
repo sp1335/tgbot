@@ -1,53 +1,11 @@
 const { stringify } = require('querystring');
-const { start, catalogue, edit, editDetail, ordersForStaff, ordersKeyboard, ordersForCustomer } = require('../services/scenarios');
+const { start, catalogue, edit, editDetail, ordersForStaff, ordersKeyboard, ordersForCustomer, goToProduct } = require('../services/scenarios');
 
 let productList = []
 let orderList = []
 let selectedItem
 let askState = false
 
-async function goToProduct(from, bot) {
-    const catalogueConfig = await catalogue()
-    productList = catalogueConfig.catalogue
-    selectedItem = productList.find(product => product.id === selectedItem.id)
-    const portions = Object.entries(selectedItem)
-        .filter(([key, value]) => key.startsWith('porcja'))
-        .filter(([key, value]) => value !== null)
-        .map(([key, value]) => value)
-    const buttons = portions.map((portion) => ({
-        text: portion,
-        callback_data: JSON.stringify({
-            method: 'order',
-            portion: portion,
-            pid: selectedItem.id,
-        })
-        // callback_data: `portion_${portion}, pid_${selectedItem.id}`
-    }))
-    if (from !== undefined && bot !== undefined) {
-        let caption = `<b>${selectedItem.name}</b>\n\n${selectedItem.description}\n\n`
-        if (selectedItem.cena1 !== null) {
-            caption += `<i>${selectedItem.cena1}PLN - ${selectedItem.porcja1}</i>\n`;
-        }
-        if (selectedItem.cena2 !== null) {
-            caption += `<i>${selectedItem.cena2}PLN - ${selectedItem.porcja2}</i>\n`;
-        }
-        if (selectedItem.cena3 !== null) {
-            caption += `<i>${selectedItem.cena3}PLN - ${selectedItem.porcja3}</i>`;
-        }
-        bot.sendPhoto(
-            from.id,
-            './img/16469064804190.png',
-            {
-                caption: caption,
-                parse_mode: 'HTML',
-                reply_markup: {
-                    inline_keyboard: [buttons],
-                    resize_keyboard: true
-                }
-            }
-        )
-    }
-}
 function initializeCommands(bot) {
     bot.onText(/.*/, async (msg, match) => {
         const userid = msg.from.id
@@ -87,8 +45,27 @@ function initializeCommands(bot) {
                     parse_mode: 'HTML'
                 });
             }
+            selectedItem = productList.find(product => product.id === selectedItem.id)
             if (selectedItem !== null && selectedItem !== '' && selectedItem !== undefined) {
-                goToProduct(msg.from, bot)
+                const goToProductRes = await goToProduct(msg.from, selectedItem);
+                console.log(goToProductRes)
+                if (goToProductRes !== undefined && goToProductRes.buttons !== undefined && goToProductRes.caption !== undefined) {
+                    bot.sendPhoto(
+                        msg.from.id,
+                        './img/16469064804190.png',
+                        {
+                            caption: goToProductRes.caption,
+                            parse_mode: 'HTML',
+                            reply_markup: {
+                                inline_keyboard: [goToProductRes.buttons],
+                                resize_keyboard: true
+                            }
+                        }
+                    )
+                } else {
+                    bot.sendMessage(msg.from.id, `Unknown product error. Go back to /start...`)
+                }
+
             } else {
                 bot.sendMessage(msg.from.id, `You've not selected any product yet...`, {
                     parse_mode: 'HTML'

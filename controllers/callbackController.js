@@ -9,11 +9,17 @@ function initializeCallback(bot) {
             const portion = query.portion
             const response = await makeOrder(pid, uid, portion)
             console.log('makeOrder response: ', response)
-            if (response.status === 200) {
-                bot.sendMessage(uid, response.message, { parse_mode: 'HTML' })
-            } else {
-                bot.sendMessage(uid, response.message, { parse_mode: 'HTML' })
+            console.log(response.message)
+            try {
+                if (response.status === 200 && response.message !== undefined) {
+                    bot.sendMessage(uid, response.message, { parse_mode: 'HTML' })
+                } else {
+                    bot.sendMessage(uid, 'Unknown order error. Go back to /start...', { parse_mode: 'HTML' })
+                }
+            } catch (error) {
+                console.log(error)
             }
+
         } else {
             bot.sendMessage(uid, `<i>Unknown command\nGo back to /start</i>`, { parse_mode: 'HTML' })
         }

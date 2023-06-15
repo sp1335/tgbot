@@ -59,7 +59,7 @@ async function makeOrder(pid, tgid, portion) {
                 message: `
                     Item #${pid} succesfully added to your order #${orderId}.
                     \nTo proceed with the ordering process,
-                    \nnavigate back to / start and visit your < i > Active Order</i > tab
+                    \nnavigate back to /start and visit your Active Order tab
             ` }
         } catch (error) {
             console.log(error)
@@ -84,8 +84,8 @@ async function makeOrder(pid, tgid, portion) {
                 status: 200,
                 message: `
                     Item #${pid} succesfully added to your order #${orderId}.
-                    \nTo proceed with the ordering process,
-                    \nnavigate back to / start and visit your < i > Active Order</i > tab
+                \nTo proceed with the ordering process,
+                \nnavigate back to /start and visit your Active Order tab
             ` }
         } catch (error) {
             await pool.query('ROLLBACK')

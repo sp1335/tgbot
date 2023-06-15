@@ -7,7 +7,35 @@ const { toUnicode } = require('punycode');
 async function requestStatus(uid) {
     return await authMiddleware.identifyUser(uid)
 }
-
+async function goToProduct(from, selectedItem) {
+    const catalogueConfig = await catalogue()
+    productList = catalogueConfig.catalogue
+    const portions = Object.entries(selectedItem)
+        .filter(([key, value]) => key.startsWith('porcja'))
+        .filter(([key, value]) => value !== null)
+        .map(([key, value]) => value)
+    const buttons = portions.map((portion) => ({
+        text: portion,
+        callback_data: JSON.stringify({
+            method: 'order',
+            portion: portion,
+            pid: selectedItem.id,
+        })
+    }))
+    if (from !== undefined) {
+        let caption = `<b>${selectedItem.name}</b>\n\n${selectedItem.description}\n\n`
+        if (selectedItem.cena1 !== null) {
+            caption += `<i>${selectedItem.cena1}PLN - ${selectedItem.porcja1}</i>\n`;
+        }
+        if (selectedItem.cena2 !== null) {
+            caption += `<i>${selectedItem.cena2}PLN - ${selectedItem.porcja2}</i>\n`;
+        }
+        if (selectedItem.cena3 !== null) {
+            caption += `<i>${selectedItem.cena3}PLN - ${selectedItem.porcja3}</i>`;
+        }
+        return { buttons: buttons, caption: caption }
+    }
+}
 async function start(from) {
     const status = await requestStatus(from.id)
     console.log(status)
@@ -45,17 +73,6 @@ async function catalogue() {
         catalogue: productList
     }
 }
-// async function product(from) {
-//     const status = await requestStatus(from.id)
-//     console.log(status)
-//     let keyboard = []
-//     if (status.data.role === 'staff') {
-//         keyboard = [['Edit item', 'Delete item'], ['Go back to catalogue']]
-//     } else {
-//         keyboard = [['Order this item'], ['Go back to catalogue']]
-//     }
-//     return keyboard
-// }
 async function editDetail(id, from, config, value) {
     const status = await requestStatus(from)
     if (status.data.role === 'staff') {
@@ -146,11 +163,11 @@ function ordersKeyboard(array, type) {
 }
 module.exports = {
     catalogue,
-    start, 
-    // product, 
-    edit, 
-    editDetail, 
-    ordersForStaff, 
-    ordersKeyboard, 
+    start,
+    goToProduct,
+    edit,
+    editDetail,
+    ordersForStaff,
+    ordersKeyboard,
     ordersForCustomer
 }
