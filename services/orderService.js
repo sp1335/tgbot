@@ -124,7 +124,19 @@ async function checkActiveOrder(uid) {
     const response = await pool.query(query, [uid])
     console.log(response.rowCount)
     if (response.rowCount > 0) {
-        return {status: 200, order: response.rows[0]}
+        return { status: 200, order: response.rows[0] }
     } return false
 }
-module.exports = { ordersStaff, ordersCustomer, makeOrder, checkActiveOrder }
+async function fetchItems(oid) {
+    const query = `SELECT * FROM order_items WHERE order_id = $1`
+    const response = await pool.query(query, [oid])
+    const items_list = response.rows
+    return items_list
+}
+module.exports = {
+    ordersStaff,
+    ordersCustomer,
+    makeOrder,
+    checkActiveOrder,
+    fetchItems
+}

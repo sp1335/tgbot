@@ -2,7 +2,6 @@ const authMiddleware = require('../middlewares/authMiddleware');
 const productService = require('../services/productService');
 const orderService = require('../services/orderService');
 const UserService = require('../services/userService');
-const { toUnicode } = require('punycode');
 
 async function requestStatus(uid) {
     return await authMiddleware.identifyUser(uid)
@@ -16,7 +15,32 @@ async function checkActiveOrder(uid) {
     }
 
 }
-
+async function finishOrder(tid) {
+    const userData = await authMiddleware.identifyUser(tid);
+    const uid = userData.data.id
+    const checkOrder = await orderService.checkActiveOrder(uid)
+    if (checkOrder === false || checkOrder === undefined || checkOrder === null) {
+        return { status: 404, message: `Unknown order error.\nProbably you got this button by mistake, and you shouldn't be allowed to see it.\nGo back to /start...` }
+    } else {
+        const oid = checkOrder.order.id
+        const items_list = await orderService.fetchItems(oid)
+        const total_price = checkOrder.order.total_price
+        let id_of_items = items_list.map((item) => [item.product_id, item.price_per_unit])
+        let was = []
+        for (let i = 0; i < id_of_items.length; i++) {
+            if (!was.find(item => item[0] === id_of_items[i][0] && item[1] === id_of_items[i][1])) {
+                was.push(id_of_items[i])
+                const item = await productService.fetchProduct(id_of_items[i][0])
+                const quantity = (items_list.find(item => item.id === item.id && item.price_per_unit === id_of_items[i][1])).quantity
+                id_of_items[i] = [item.id, item.name, item.category, id_of_items[i][1], quantity]
+            } else {
+                id_of_items.splice(i, 1)
+                i--;
+            }
+        }
+        return { status: 200, order: id_of_items }
+    }
+}
 async function goToProduct(from, selectedItem) {
     const catalogueConfig = await catalogue()
     productList = catalogueConfig.catalogue
@@ -183,5 +207,6 @@ module.exports = {
     editDetail,
     ordersForStaff,
     ordersKeyboard,
-    ordersForCustomer
+    ordersForCustomer,
+    finishOrder
 }

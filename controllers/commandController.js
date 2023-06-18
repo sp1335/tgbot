@@ -1,5 +1,4 @@
-const { stringify } = require('querystring');
-const { start, catalogue, edit, editDetail, ordersForStaff, ordersKeyboard, ordersForCustomer, goToProduct } = require('../services/scenarios');
+const { start, catalogue, ordersForStaff, ordersKeyboard, ordersForCustomer, goToProduct, finishOrder } = require('../services/scenarios');
 
 let productList = []
 let orderList = []
@@ -80,8 +79,17 @@ function initializeCommands(bot) {
                 const keyboard = ordersKeyboard(orders.orders.orders, 'customer')
             }
         } else if (clickedButton === 'Finish your order') {
-            //TODO
-            console.log('Finish order')
+            const res = await finishOrder(userid)
+            console.log(res)
+            if (res.status === 200) {
+                let message = ''
+                res.order.forEach((item)=>{
+                    message+=`\n${item[4]} of  ${item[1]} for ${item[3]}zł`
+                })
+                bot.sendMessage(msg.from.id, `${message}`)
+            } else {
+                bot.sendMessage(msg.from.id, res.message)
+            }
         } else if (clickedButton === 'Orders' || clickedButton === 'Go back to orders') {
             const orders = await ordersForStaff(msg.from)
             if (orders.status === 400) {
