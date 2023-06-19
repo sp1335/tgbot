@@ -8,8 +8,6 @@ function initializeCallback(bot) {
             const pid = query.pid
             const portion = query.portion
             const response = await makeOrder(pid, uid, portion)
-            console.log('makeOrder response: ', response)
-            console.log(response.message)
             try {
                 if (response.status === 200 && response.message !== undefined) {
                     bot.sendMessage(uid, response.message, { parse_mode: 'HTML' })

@@ -1,6 +1,5 @@
 const pool = require('../dbPool');
 const { getUid } = require('./userService')
-const { identifyUser } = require('../middlewares/authMiddleware')
 async function makeOrder(pid, tgid, portion) {
     const unitPriceQuery = `
         SELECT 
@@ -97,7 +96,7 @@ async function ordersCustomer(uid) {
     const query = `
         SELECT *
             FROM orders 
-    WHERE user_id = $1`
+            WHERE user_id = $1`
     try {
         const orders = await pool.query(query, [uid])
         return { status: 200, orders: orders.rows }
@@ -117,12 +116,10 @@ async function ordersStaff() {
     } catch (error) {
         return { status: 500, error: error }
     }
-
 }
 async function checkActiveOrder(uid) {
     const query = `SELECT * FROM orders WHERE user_id = $1 AND is_completed = false`
     const response = await pool.query(query, [uid])
-    console.log(response.rowCount)
     if (response.rowCount > 0) {
         return { status: 200, order: response.rows[0] }
     } return false

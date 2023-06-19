@@ -1,3 +1,4 @@
+const { checkActiveOrder } = require('../services/orderService');
 const { start, catalogue, ordersForStaff, ordersKeyboard, ordersForCustomer, goToProduct, finishOrder } = require('../services/scenarios');
 
 let productList = []
@@ -28,7 +29,6 @@ function initializeCommands(bot) {
         } else if (clickedButton === 'Go back to start' || clickedButton === '\/start') {
             selectedItem = null
             const startConfig = await start(msg.from)
-            console.log('Controller', startConfig)
             bot.sendMessage(userid, startConfig.message, {
                 parse_mode: 'HTML',
                 reply_markup: {
@@ -49,6 +49,7 @@ function initializeCommands(bot) {
                 const goToProductRes = await goToProduct(msg.from, selectedItem);
                 console.log(goToProductRes)
                 if (goToProductRes !== undefined && goToProductRes.buttons !== undefined && goToProductRes.caption !== undefined) {
+                    console.log(goToProductRes.buttons)
                     bot.sendPhoto(
                         msg.from.id,
                         './img/16469064804190.png',
@@ -72,7 +73,6 @@ function initializeCommands(bot) {
             }
         } else if (clickedButton === 'My orders') {
             const orders = await ordersForCustomer(msg.from);
-            console.log(orders)
             if (orders.status === 204) {
                 bot.sendMessage(msg.from.id, orders.message)
             } else {
@@ -80,13 +80,36 @@ function initializeCommands(bot) {
             }
         } else if (clickedButton === 'Finish your order') {
             const res = await finishOrder(userid)
-            console.log(res)
             if (res.status === 200) {
                 let message = ''
-                res.order.forEach((item)=>{
-                    message+=`\n${item[4]} of  ${item[1]} for ${item[3]}zł`
+                res.order.forEach((item) => {
+                    message += `\n${item[4]} of  ${item[1]} for ${item[3]}zł`
                 })
-                bot.sendMessage(msg.from.id, `${message}`)
+                bot.sendMessage(msg.from.id,
+                    `You have unfinished order #${res.oid}.\nConfirm that you want to order items bellow:\n${message}\n\nTotal price is: ${res.total_price}zł`,
+                    {
+                        parse_mode: 'HTML',
+                        reply_markup: {
+                            inline_keyboard: [
+                                [{
+                                    text: 'Confirm order',
+                                    callback_data: JSON.stringify({
+                                        method: 'confirm_order',
+                                        order_id: res.order.id
+                                    })
+                                },
+                                {
+                                    text: 'Delete order',
+                                    callback_data: JSON.stringify({
+                                        method: 'delete_order',
+                                        order_id: res.order.id
+                                    })
+                                }]
+                            ],
+                            resize_keyboard: true
+                        }
+                    }
+                )
             } else {
                 bot.sendMessage(msg.from.id, res.message)
             }

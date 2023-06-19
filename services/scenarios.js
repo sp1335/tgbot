@@ -38,7 +38,7 @@ async function finishOrder(tid) {
                 i--;
             }
         }
-        return { status: 200, order: id_of_items }
+        return { status: 200,oid: oid, order: id_of_items, total_price: total_price}
     }
 }
 async function goToProduct(from, selectedItem) {
@@ -77,6 +77,7 @@ async function start(from) {
     } else if (status.status === 200) {
         if (status.data.role === 'customer') {
             const activeOrderRes = await checkActiveOrder(status.data.id)
+            const phone_number = status.data.phone_number
             let keyboard = [
                 ['Catalogue'],
                 ['My orders'],
@@ -84,8 +85,10 @@ async function start(from) {
             ]
             if (activeOrderRes.status === 200) {
                 keyboard.unshift([`Finish your order `])
+                if(!status.data.phone_number){
+                    keyboard.unshift([`Share your contact to the bot`])
+                }
             }
-            console.log(keyboard)
             return {
                 keyboard: keyboard,
                 message: `Welcome again, ${status.data.first_name}!`
@@ -111,43 +114,9 @@ async function catalogue() {
         catalogue: productList
     }
 }
-async function editDetail(id, from, config, value) {
-    const status = await requestStatus(from)
-    if (status.data.role === 'staff') {
-        const editResponse = await productService.editProduct(id, config, value)
-        if (editResponse.status === 200) {
-            return { status: 200, message: 'Item updated successfully' }
-        }
-    } else {
-        return { status: 500, message: 'Unautorized action...' }
-    }
-}
-async function edit(id, from) {
-    const status = await requestStatus(from)
-    if (status.data.role === 'staff') {
-        try {
-            productService.editProduct(id)
-        } catch (error) {
-            return {
-                status: 500,
-                message: 'Product edit failed: ' + error,
-                newCatalogue: productList
-            }
-        }
-        const keyboard = [['Edit name', 'Edit description'], ['Edit options', 'Edit photo(temporary not available)'], ['Go back to product']]
-        return {
-            status: 200,
-            message: 'What do you want to change?',
-            keyboard
-        }
-    } else {
-        return { status: 500, message: 'Product edit forbidden ' }
-    }
-}
 async function ordersForCustomer(from) {
     const uid = await UserService.getUid(from.id)
     const orders = await orderService.ordersCustomer(uid.id)
-    console.log(from)
     if (orders.status === 200) {
         if (orders.orders.length === 0) {
             return {
@@ -180,7 +149,6 @@ async function ordersForStaff(from) {
 
 function ordersKeyboard(array, type) {
     const keyboard = []
-    console.log(array, type)
     if (array !== undefined) {
         if (type === 'staff') {
             array.forEach(order => {
@@ -203,10 +171,15 @@ module.exports = {
     catalogue,
     start,
     goToProduct,
-    edit,
-    editDetail,
     ordersForStaff,
     ordersKeyboard,
     ordersForCustomer,
     finishOrder
 }
+
+
+
+
+
+
+
