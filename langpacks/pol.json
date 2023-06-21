@@ -1,0 +1,24 @@
+{
+    "buttons": {
+        "catalog": "Katalog",
+        "myOrders": "Moje zamówienia",
+        "sendFeedback": "Wyślij opinię",
+        "feedback": "Opinia",
+        "contactRequest": "Podziel się swoimi danymi z botem",
+        "statistics": "Statystyki",
+        "financialInfo": "Informacje finansowe"
+    },
+    "commands": {
+        "catalog": "Katalog",
+        "gobacktocatalog": "Powrót do katalogu",
+        "gobacktostart": "Powrót do początku",
+        "gobacktoproduct": "Powrót do produktu",
+        "myorders": "Moje zamówienia",
+        "finishorder": "Zakończ zamówienie",
+        "orders": "Zamówienia",
+        "backtoorders": "Powrót do zamówień",
+        "unservedorders": "Nieobsłużone zamówienia",
+        "servedorders": "Obsłużone zamówienia"
+    },
+    "answers": {}
+}

@@ -1,10 +1,27 @@
-const { checkActiveOrder } = require('../services/orderService');
 const { start, catalogue, ordersForStaff, ordersKeyboard, ordersForCustomer, goToProduct, finishOrder } = require('../services/scenarios');
 
 let productList = []
 let orderList = []
 let selectedItem
 let askState = false
+
+const userLanguage = 'rus'
+let langPackPath
+switch (userLanguage) {
+    case 'rus':
+        langPackPath = '../langpacks/rus.json'
+        break
+    case 'ukr':
+        langPackPath = '../langpacks/ukr.json'
+        break
+    case 'pol':
+        langPackPath = '../langpacks/pol.json'
+        break
+    case 'eng':
+        langPackPath = '../langpacks/eng.json'
+        break
+}
+const langPack = require(langPackPath)
 
 function initializeCommands(bot) {
     bot.onText(/.*/, async (msg, match) => {
@@ -85,6 +102,7 @@ function initializeCommands(bot) {
                 res.order.forEach((item) => {
                     message += `\n${item[4]} of  ${item[1]} for ${item[3]}zł`
                 })
+                askState = true
                 bot.sendMessage(msg.from.id,
                     `You have unfinished order #${res.oid}.\nConfirm that you want to order items bellow:\n${message}\n\nTotal price is: ${res.total_price}zł`,
                     {
@@ -95,14 +113,14 @@ function initializeCommands(bot) {
                                     text: 'Confirm order',
                                     callback_data: JSON.stringify({
                                         method: 'confirm_order',
-                                        order_id: res.order.id
+                                        order_id: res.oid
                                     })
                                 },
                                 {
                                     text: 'Delete order',
                                     callback_data: JSON.stringify({
                                         method: 'delete_order',
-                                        order_id: res.order.id
+                                        order_id: res.oid
                                     })
                                 }]
                             ],
@@ -163,9 +181,12 @@ function initializeCommands(bot) {
             console.log(clickedOrder)
         } else {
             if (askState === false) {
+                console.log('TUT')
                 bot.sendMessage(msg.from.id, '<i>Unknown command\nGo back to /start</i>', {
                     parse_mode: 'HTML'
                 });
+            }else{
+                askState = false
             }
         }
     })

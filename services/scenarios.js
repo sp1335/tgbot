@@ -13,7 +13,6 @@ async function checkActiveOrder(uid) {
     } else {
         return { status: 204 }
     }
-
 }
 async function finishOrder(tid) {
     const userData = await authMiddleware.identifyUser(tid);
@@ -38,7 +37,7 @@ async function finishOrder(tid) {
                 i--;
             }
         }
-        return { status: 200,oid: oid, order: id_of_items, total_price: total_price}
+        return { status: 200, oid: oid, order: id_of_items, total_price: total_price }
     }
 }
 async function goToProduct(from, selectedItem) {
@@ -85,9 +84,6 @@ async function start(from) {
             ]
             if (activeOrderRes.status === 200) {
                 keyboard.unshift([`Finish your order `])
-                if(!status.data.phone_number){
-                    keyboard.unshift([`Share your contact to the bot`])
-                }
             }
             return {
                 keyboard: keyboard,

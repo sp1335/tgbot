@@ -1,0 +1,24 @@
+{
+    "buttons": {
+        "catalog": "Каталог",
+        "myOrders": "Мои заказы",
+        "sendFeedback": "Отправить отзыв",
+        "feedback": "Отзыв",
+        "contactRequest": "Поделиться контактом з ботом",
+        "statistics": "Статистика",
+        "financialInfo": "Финансовая информация"
+    },
+    "commands": {
+        "catalog": "Каталог",
+        "gobacktocatalog": "Повернутися до каталогу",
+        "gobacktostart": "Повернутися до початку",
+        "gobacktoproduct": "Повернутися до товару",
+        "myorders": "Мої замовлення",
+        "finishorder": "Завершити замовлення",
+        "orders": "Замовлення",
+        "backtoorders": "Повернутися до замовлень",
+        "unservedorders": "Необроблені замовлення",
+        "servedorders": "Оброблені замовлення"
+    },
+    "answers": {}
+}

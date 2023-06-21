@@ -1,0 +1,24 @@
+{
+    "buttons": {
+        "catalog": "Catalogue",
+        "myOrders": "My orders",
+        "sendFeedback": "Send feedback",
+        "feedback" : "Feedback",
+        "contactRequest": "Share your contact to the bot",
+        "statistics": "Statistics",
+        "financialInfo" : "Financial Information"
+    },
+    "commands": {
+        "catalog": "Catalogue",
+        "gobacktocatalog": "Go back to catalogue",
+        "gobacktostart": "Go back to star",
+        "gobacktoproduct": "Go back to product",
+        "myorders": "My orders",
+        "finishorder": "Finish your order",
+        "orders": "Orders",
+        "backtoorders": "Go back to orders",
+        "unservedorders": "Unserved orders",
+        "serverdorders": "Served orders"
+    },
+    "answers": {}
+}

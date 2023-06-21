@@ -130,10 +130,45 @@ async function fetchItems(oid) {
     const items_list = response.rows
     return items_list
 }
+async function deleteOrder(oid, tid) {
+    const uid = await getUid(tid)
+    try {
+        await pool.query(`BEGIN TRANSACTION`)
+        const checkIfOrderExists = `SELECT * FROM orders WHERE id = $1`
+        const checkIfOrderExistsRes = await pool.query(checkIfOrderExists, [oid])
+        if (checkIfOrderExistsRes.rowCount > 0) {
+            const expectedUid = checkIfOrderExistsRes.rows[0].user_id
+            if (expectedUid != uid) {
+                await pool.query('ROLLBACK')
+                return { status: 500, message: `Error deleting order. Go back to /start...` }
+            } else {
+                const deleteItems = `DELETE FROM order_items WHERE order_id = $1`
+                await pool.query(deleteItems, [oid])
+                const deleteOrder = `DELETE FROM orders WHERE id = $1`
+                await pool.query(deleteOrder, [oid])
+                await pool.query('COMMIT')
+                return {
+                    status: 200,
+                    message: `
+                    Order #${oid} succesfully deleted.
+                    \nOrdering process has been stopped.
+                    \nGo back to /start to proceed using bot.
+            ` }
+            }
+        }
+    } catch (error) {
+        console.log(error)
+        await pool.query('ROLLBACK')
+        return { status: 500, message: 'Unknown error' }
+    }
+
+}
+
 module.exports = {
     ordersStaff,
     ordersCustomer,
     makeOrder,
     checkActiveOrder,
-    fetchItems
+    fetchItems,
+    deleteOrder
 }

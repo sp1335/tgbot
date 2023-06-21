@@ -1,0 +1,24 @@
+{
+    "buttons": {
+        "catalog": "Каталог",
+        "myOrders": "Мои заказы",
+        "sendFeedback": "Отправить отзыв",
+        "feedback": "Отзыв",
+        "contactRequest": "Поделиться контактом с ботом",
+        "statistics": "Статистика",
+        "financialInfo": "Финансовая информация"
+    },
+    "commands": {
+        "catalog": "Каталог",
+        "gobacktocatalog": "Вернуться к каталогу",
+        "gobacktostart": "Вернуться к началу",
+        "gobacktoproduct": "Вернуться к товару",
+        "myorders": "Мои заказы",
+        "finishorder": "Завершить заказ",
+        "orders": "Заказы",
+        "backtoorders": "Вернуться к заказам",
+        "unservedorders": "Невыполненные заказы",
+        "servedorders": "Выполненные заказы"
+    },
+    "answers": {}
+}
