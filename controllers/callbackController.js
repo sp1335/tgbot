@@ -1,4 +1,6 @@
 const { makeOrder, deleteOrder } = require('../services/orderService')
+const { getUid, orderAbility } = require('../services/userService')
+
 function initializeCallback(bot) {
     bot.on('callback_query', async (msg) => {
         const uid = msg.from.id
@@ -18,6 +20,10 @@ function initializeCallback(bot) {
                 console.log(error)
             }
         } else if (method === 'confirm_order') {
+            const oid = query.order_id
+            const uuid = await getUid(uid)
+            const orderAbilityRes = await orderAbility(uuid)
+            console.log(orderAbilityRes)
 
         } else if (method === 'delete_order') {
             const oid = query.order_id
