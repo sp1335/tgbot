@@ -1,7 +1,7 @@
-const { makeOrder, deleteOrder } = require('../services/orderService')
-const { getUid, orderAbility } = require('../services/userService')
+const { makeOrder, deleteOrder, deliveryState, setDeliveryState } = require('../services/orderService')
+const { getUid, orderAbility, insertPhoneNumber } = require('../services/userService')
 
-function initializeCallback(bot) {
+function initializeCallback(bot, askState) {
     bot.on('callback_query', async (msg) => {
         const uid = msg.from.id
         const query = JSON.parse(msg.data)
@@ -23,7 +23,84 @@ function initializeCallback(bot) {
             const oid = query.order_id
             const uuid = await getUid(uid)
             const orderAbilityRes = await orderAbility(uuid)
-            console.log(orderAbilityRes)
+            const delivery = await deliveryState(oid)
+            if (orderAbilityRes.status === 1002 || orderAbilityRes.status === 1001) {
+                const options = {
+                    reply_markup: {
+                        keyboard: [
+                            [
+                                {
+                                    text: 'Share Phone Number',
+                                    request_contact: true,
+                                },
+                            ],
+                        ],
+                        resize_keyboard: true,
+                        one_time_keyboard: true,
+                    },
+                };
+                bot.sendMessage(uid, 'Please share your phone number:', options)
+                    .then(() => {
+                        bot.on('contact', async (msg) => {
+                            const contact = msg.contact.phone_number
+                            const insertContact = await insertPhoneNumber(uuid, contact);
+                            if (insertContact.status === 200) {
+                                bot.sendMessage(uid, insertContact.message)
+                            } else {
+                                bot.sendMessage(uid, insertContact.message)
+                            }
+                        })
+                    })
+                    .catch((err) => {
+                        console.log(err)
+                    })
+                    ;
+            } else if (orderAbilityRes.status === 403) {
+                bot.sendMessage(uid, 'Forbidden to place the order', { parse_mode: 'HTML' })
+            } else if (orderAbilityRes.status === 200) {
+                if (delivery.status === 500) {
+                    const options = {
+                        reply_markup: {
+                            keyboard: [
+                                [
+                                    {
+                                        text: 'Takeaway'
+                                    },
+                                    {
+                                        text: 'Delivery'
+                                    },
+                                ],
+                            ],
+                            resize_keyboard: true,
+                            one_time_keyboard: true,
+                        },
+                    };
+                    bot.sendMessage(uid, delivery.message + '\nSelect delivery method', options)
+                        .then(() => {
+                            bot.onText(/^(Takeaway|Delivery)$/, async (msg, match) => {
+                                const res = match[1]
+                                if (res === 'Takeaway' || res === 'Delivery') {
+                                    const setDeliveryStateFunc = await setDeliveryState(oid, res, bot, uid, askState)      
+                                    if (setDeliveryStateFunc.status === 200) {       
+                                        bot.sendMessage(uid, setDeliveryStateFunc.message,
+                                            { parse_mode: 'HTML' })
+                                    } else {
+                                        bot.sendMessage(uid, setDeliveryStateFunc.message)
+                                    }
+                                } else {
+                                    bot.sendMessage(uid, 'Unknown option')
+                                }
+                            })
+                        })
+                } else {
+                    bot.sendMessage(uid, `Order #${oid} registered as confirmed.\n
+                    Our manager will be notified and will reach you out soon.\n
+                    Fill free to go back to <i>/start</i> ...`,
+                        { parse_mode: 'HTML' })
+                }
+            } else {
+                bot.sendMessage(uid, 'Unknown order error. Go back to /start...', { parse_mode: 'HTML' })
+            }
 
         } else if (method === 'delete_order') {
             const oid = query.order_id

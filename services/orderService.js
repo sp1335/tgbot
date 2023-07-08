@@ -1,3 +1,4 @@
+const { stat } = require('fs');
 const pool = require('../dbPool');
 const { getUid } = require('./userService')
 async function makeOrder(pid, tgid, portion) {
@@ -118,7 +119,7 @@ async function ordersStaff() {
     }
 }
 async function checkActiveOrder(uid) {
-    const query = `SELECT * FROM orders WHERE user_id = $1 AND is_completed = false`
+    const query = `SELECT * FROM orders WHERE user_id = $1 AND confirmed = false`
     const response = await pool.query(query, [uid])
     if (response.rowCount > 0) {
         return { status: 200, order: response.rows[0] }
@@ -163,12 +164,95 @@ async function deleteOrder(oid, tid) {
     }
 
 }
+async function deliveryState(oid) {
+    const query = 'SELECT delivery_type, delivery_address, delivery_price FROM orders WHERE id = $1 AND confirmed = false'
+    const res = await pool.query(query, [oid])
+    const deliveryDetails = res.rows
+    const isNull = deliveryDetails.some(obj => Object.values(obj).some(val => val === null))
+    if (!isNull) {
 
+    } else {
+        return { status: 500, message: 'Delivery state is not full' }
+    }
+}
+async function setDeliveryState(oid, state, bot, uid, askState) {
+    try {
+        await pool.query('BEGIN TRANSACTION')
+        if (state === 'Takeaway') {
+            const takeawayquery = 'UPDATE orders SET delivery_type = $1 WHERE id = $2'
+            const res = await pool.query(takeawayquery, [state, oid])
+            if (res.rowCount !== 0) {
+                const orderConfirmedQuery = `UPDATE orders SET confirmed = true WHERE id = $1`
+                const res = await pool.query(orderConfirmedQuery, [oid])
+                if (res.rowCount !== 0) {
+                    await pool.query('COMMIT')
+                    return {
+                        status: 200,
+                        message: `Delivery method selected succesfully.\nOrder #${oid} registered as confirmed.\nOur manager will be notified and will reach you out soon.\nFill free to go back to /start...`
+                    }
+                }
+                else {
+                    await pool.query('ROLLBACK')
+                    return { status: 500, message: "Unknown error" }
+                }
+            } else {
+                await pool.query('ROLLBACK')
+                return { status: 500, message: "Unknown error" }
+            }
+        } else if (state === 'Delivery') {
+            try {
+                const query = 'SELECT delivery_address FROM orders WHERE id = $1';
+                const res = await pool.query(query, [oid]);
+                if (res.rows[0].delivery_address === null || res.rows[0].delivery_address === '') {
+                    return new Promise((resolve, reject) => {
+                        bot.sendMessage(uid, 'Since you wish to use the delivery service, please provide a delivery address', { parse_mode: 'HTML' })
+                            .then(() => {
+                                askState = true;
+                                bot.onText(/^(.*)$/, async (msg, match) => {
+                                    const address = match[1];
+                                    const updateQuery = 'UPDATE orders SET delivery_address = $1, delivery_type = $2, confirmed = true WHERE id = $3';
+                                    await pool.query(updateQuery, [address, state, oid]);
+                                    await pool.query('COMMIT');
+                                    resolve({
+                                        status: 200,
+                                        message: `Delivery method selected successfully.\nOrder #${oid} registered as confirmed.\nOur manager will be notified and will reach out to you soon.\nFeel free to go back to /start...`,
+                                    });
+                                    askState=false;
+                                });
+                            })
+                            .catch(async (err) => {
+                                console.log(err);
+                                await pool.query('ROLLBACK');
+                                reject({ status: 500, message: 'Unknown error' });
+                            });
+                    });
+                } else {
+                    return {
+                        status: 200,
+                        message: `Delivery method selected successfully.\nOrder #${oid} registered as confirmed.\nOur manager will be notified and will reach out to you soon.\nFeel free to go back to /start...`,
+                    };
+                }
+            } catch (error) {
+                await pool.query('ROLLBACK');
+                return { status: 500, message: 'Unknown error' };
+            }
+        } else {
+            await pool.query('ROLLBACK')
+            return { status: 500, message: "Unknown delivery option" }
+        }
+    } catch (error) {
+        console.log(error)
+        await pool.query('ROLLBACK')
+        return { status: 500, message: "ERROR" }
+    }
+}
 module.exports = {
     ordersStaff,
     ordersCustomer,
     makeOrder,
     checkActiveOrder,
     fetchItems,
-    deleteOrder
+    deleteOrder,
+    deliveryState,
+    setDeliveryState
 }

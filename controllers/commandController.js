@@ -3,7 +3,6 @@ const { start, catalogue, ordersForStaff, ordersKeyboard, ordersForCustomer, goT
 let productList = []
 let orderList = []
 let selectedItem
-let askState = false
 
 const userLanguage = 'rus'
 let langPackPath
@@ -23,7 +22,7 @@ switch (userLanguage) {
 }
 const langPack = require(langPackPath)
 
-function initializeCommands(bot) {
+function initializeCommands(bot, askState) {
     bot.onText(/.*/, async (msg, match) => {
         const userid = msg.from.id
         const clickedButton = match[0]
@@ -181,7 +180,6 @@ function initializeCommands(bot) {
             console.log(clickedOrder)
         } else {
             if (askState === false) {
-                console.log('TUT')
                 bot.sendMessage(msg.from.id, '<i>Unknown command\nGo back to /start</i>', {
                     parse_mode: 'HTML'
                 });
