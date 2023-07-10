@@ -9,7 +9,6 @@ let askState = false
 async function checkBotStatus() {
     bot.getMe()
         .then((me) => {
-            console.log(bot.getMyCommands())
             console.log('Bot is active and running: ', me.username)
         })
         .catch((err) => {

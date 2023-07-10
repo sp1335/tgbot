@@ -16,7 +16,7 @@ async function makeOrder(pid, tgid, portion) {
     `
     const uid = await getUid(tgid)
     const unitPriceResponse = (await pool.query(unitPriceQuery, [pid, portion])).rows[0].price
-    const customerActiveOrder = `SELECT * FROM orders WHERE user_id = $1 AND is_completed = false`
+    const customerActiveOrder = `SELECT * FROM orders WHERE user_id = $1 AND confirmed = false`
     const response = await pool.query(customerActiveOrder, [uid])
     if (response.rowCount != 0) {
         const orderId = response.rows[0].id
@@ -58,8 +58,9 @@ async function makeOrder(pid, tgid, portion) {
                 status: 200,
                 message: `
                     Item #${pid} succesfully added to your order #${orderId}.
-                    \nTo proceed with the ordering process,
-                    \nnavigate back to /start and visit your Active Order tab
+                    \nTo proceed the ordering,
+                    \nnavigate back to /start and visit "Finish your order" button, 
+                    \nor continue adding items to your order.
             ` }
         } catch (error) {
             console.log(error)
@@ -70,8 +71,8 @@ async function makeOrder(pid, tgid, portion) {
         try {
             await pool.query('BEGIN TRANSACTION')
             const orderInsertQuery = `
-                INSERT INTO orders(user_id, date, total_price, delivery_type, delivery_address, delivery_price, deadline, is_completed)
-                VALUES($1, null, $2, null, null, null, null, false)
+                INSERT INTO orders(user_id, date, total_price, delivery_type, delivery_address, delivery_price, deadline, is_completed, confirmed)
+                VALUES($1, null, $2, null, null, null, null, false, false)
                 RETURNING id`
             const orderInsertQueryResponse = await pool.query(orderInsertQuery, [uid, unitPriceResponse])
             const orderId = orderInsertQueryResponse.rows[0].id
@@ -89,6 +90,7 @@ async function makeOrder(pid, tgid, portion) {
             ` }
         } catch (error) {
             await pool.query('ROLLBACK')
+            console.log(error)
             return { status: 500, message: 'Unknown error' }
         }
     }
@@ -210,14 +212,36 @@ async function setDeliveryState(oid, state, bot, uid, askState) {
                                 askState = true;
                                 bot.onText(/^(.*)$/, async (msg, match) => {
                                     const address = match[1];
-                                    const updateQuery = 'UPDATE orders SET delivery_address = $1, delivery_type = $2, confirmed = true WHERE id = $3';
-                                    await pool.query(updateQuery, [address, state, oid]);
-                                    await pool.query('COMMIT');
-                                    resolve({
-                                        status: 200,
-                                        message: `Delivery method selected successfully.\nOrder #${oid} registered as confirmed.\nOur manager will be notified and will reach out to you soon.\nFeel free to go back to /start...`,
-                                    });
-                                    askState=false;
+                                    const options = {
+                                        reply_markup: {
+                                            keyboard: [
+                                                ['Yes', 'No']
+                                            ]
+                                        },
+                                        resize_keyboard: true,
+                                        one_time_keyboard: true
+                                    }
+                                    bot.sendMessage(uid, 'Confirm that the delivery address is correct', options, { parse_mode: 'HTML' })
+                                        .then(() => {
+                                            bot.onText(/^(Yes|No)$/i, async (msg, match) => {
+                                                const confirmation = match[1]
+                                                if (confirmation === 'Yes') {
+                                                    const updateQuery = 'UPDATE orders SET delivery_address = $1, delivery_type = $2, confirmed = true WHERE id = $3';
+                                                    await pool.query(updateQuery, [address, state, oid]);
+                                                    await pool.query('COMMIT');
+                                                    resolve({
+                                                        status: 200,
+                                                        message: `Delivery method selected successfully.\nOrder #${oid} registered as confirmed.\nOur manager will be notified and will reach out to you soon.\nFeel free to go back to /start...`,
+                                                    });
+                                                    askState = false;
+                                                } else if (confirmation === 'No') {
+                                                    bot.sendMessage(uid, 'Please enter the correct delivery address.')
+                                                } else {
+                                                    bot.sendMessage(uid, 'Forbidden option. Use keyboard to communicate with bot...')
+                                                }
+                                            })
+                                        })
+
                                 });
                             })
                             .catch(async (err) => {
